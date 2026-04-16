@@ -10,7 +10,7 @@ from flask_cors import CORS
 import yfinance as yf
 import pandas as pd
 from fredapi import Fred
-from datetime import datetime, timedelta
+from datetime import datetime
 import traceback
 
 # --- LOAD ENV ---
@@ -20,162 +20,129 @@ FRED_API_KEY = os.getenv("FRED_API_KEY")
 app = Flask(__name__)
 CORS(app)
 
-# --- HELPER FUNCTIONS ---
+DEFAULT_START_DATE = "2019-06-06"
 
-def get_treasury_data(days=180):
-    """Fetch 10-Year Treasury Yield data"""
-    end = datetime.today()
-    start = end - timedelta(days=days)
-    
-    try:
-        print(f"Fetching Treasury data from {start} to {end}")
-        data = yf.download("^TNX", start=start, end=end, progress=False)
-        
-        print(f"Treasury raw data shape: {data.shape}")
-        print(f"Treasury columns: {data.columns.tolist()}")
-        
+
+def normalize_close(data, ticker_name=None):
+    if data is None or len(data) == 0:
+        return pd.Series(dtype="float64")
+
+    if isinstance(data, pd.Series):
+        return data.dropna()
+
+    if isinstance(data, pd.DataFrame):
         if data.empty:
-            print("Treasury data is empty!")
-            return []
-        
-        # Handle multi-level columns
+            return pd.Series(dtype="float64")
+
+        # Handle MultiIndex columns
         if isinstance(data.columns, pd.MultiIndex):
-            close_data = data["Close"]["^TNX"]
+            try:
+                if ("Close", ticker_name) in data.columns:
+                    series = data[("Close", ticker_name)]
+                else:
+                    series = data["Close"]
+                    if isinstance(series, pd.DataFrame):
+                        series = series.iloc[:, 0]
+            except Exception:
+                series = data.iloc[:, 0]
         else:
-            close_data = data["Close"]
-        
-        # Convert to Series if needed
-        if isinstance(close_data, pd.DataFrame):
-            close_data = close_data.squeeze()
-        
-        print(f"Treasury close data length: {len(close_data)}")
-        
-        result = []
-        for date, value in close_data.items():
-            if pd.notna(value):
-                result.append({
-                    "date": date.strftime("%Y-%m-%d"),
-                    "value": float(value)
-                })
-        
-        print(f"Treasury result length: {len(result)}")
-        return result
-        
+            if "Close" in data.columns:
+                series = data["Close"]
+            else:
+                series = data.iloc[:, 0]
+
+        if isinstance(series, pd.DataFrame):
+            series = series.squeeze()
+
+        return series.dropna()
+
+    return pd.Series(dtype="float64")
+
+
+def series_to_json(series):
+    return [
+        {"date": pd.Timestamp(date).strftime("%Y-%m-%d"), "value": float(value)}
+        for date, value in series.items()
+        if pd.notna(value)
+    ]
+
+
+def get_treasury_data(start_date_str=DEFAULT_START_DATE):
+    try:
+        start = pd.Timestamp(start_date_str)
+        end = datetime.today()
+
+        raw = yf.download("^TNX", start=start, end=end, progress=False, auto_adjust=False)
+        close_series = normalize_close(raw, "^TNX")
+
+        return series_to_json(close_series)
     except Exception as e:
         print(f"Error fetching Treasury data: {e}")
         traceback.print_exc()
         return []
 
 
-def get_move_data(days=180):
-    """Fetch MOVE Index (bond volatility) data"""
-    end = datetime.today()
-    start = end - timedelta(days=days)
-    
+def get_move_data(start_date_str=DEFAULT_START_DATE):
     try:
-        print(f"Fetching MOVE data from {start} to {end}")
-        data = yf.download("^MOVE", start=start, end=end, progress=False)
-        
-        print(f"MOVE raw data shape: {data.shape}")
-        
-        if data.empty:
-            print("MOVE data is empty!")
-            return []
-        
-        # Handle multi-level columns
-        if isinstance(data.columns, pd.MultiIndex):
-            close_data = data["Close"]["^MOVE"]
-        else:
-            close_data = data["Close"]
-        
-        if isinstance(close_data, pd.DataFrame):
-            close_data = close_data.squeeze()
-        
-        print(f"MOVE close data length: {len(close_data)}")
-        
-        result = []
-        for date, value in close_data.items():
-            if pd.notna(value):
-                result.append({
-                    "date": date.strftime("%Y-%m-%d"),
-                    "value": float(value)
-                })
-        
-        print(f"MOVE result length: {len(result)}")
-        return result
-        
+        start = pd.Timestamp(start_date_str)
+        end = datetime.today()
+
+        raw = yf.download("^MOVE", start=start, end=end, progress=False, auto_adjust=False)
+        close_series = normalize_close(raw, "^MOVE")
+
+        return series_to_json(close_series)
     except Exception as e:
         print(f"Error fetching MOVE data: {e}")
         traceback.print_exc()
         return []
 
 
-def get_mortgage_data(start_year=2018):
-    """Fetch 30-Year Mortgage Rate data from FRED"""
+def get_mortgage_data(start_date_str=DEFAULT_START_DATE):
     try:
         if not FRED_API_KEY:
-            print("FRED_API_KEY is not set!")
+            print("FRED_API_KEY is not set")
             return []
-        
-        print(f"Fetching Mortgage data from {start_year}")
+
         fred = Fred(api_key=FRED_API_KEY)
         mortgage = fred.get_series("MORTGAGE30US")
-        
-        print(f"Mortgage raw data length: {len(mortgage)}")
-        
-        start_date = datetime(start_year, 1, 1)
-        mortgage = mortgage.loc[start_date:]
-        
-        print(f"Mortgage filtered data length: {len(mortgage)}")
-        
-        result = []
-        for date, value in mortgage.items():
-            if pd.notna(value):
-                result.append({
-                    "date": date.strftime("%Y-%m-%d"),
-                    "value": float(value)
-                })
-        
-        print(f"Mortgage result length: {len(result)}")
-        return result
-        
+
+        start_date = pd.Timestamp(start_date_str)
+        mortgage = mortgage.loc[start_date:].dropna()
+
+        return series_to_json(mortgage)
     except Exception as e:
         print(f"Error fetching Mortgage data: {e}")
         traceback.print_exc()
         return []
 
 
-# --- ROUTES ---
-
 @app.route("/")
 def dashboard():
-    """Render the main dashboard page"""
     return render_template("dashboard.html")
 
 
 @app.route("/api/treasury")
 def api_treasury():
-    """API endpoint for Treasury yield data"""
     try:
-        days = request.args.get("days", 180, type=int)
-        data = get_treasury_data(days)
-        
+        start_date = request.args.get("start_date", DEFAULT_START_DATE)
+        data = get_treasury_data(start_date)
+
         if not data:
             return jsonify({
                 "success": False,
                 "error": "No treasury data available",
                 "data": []
             })
-        
+
         return jsonify({
             "success": True,
-            "data": data,
             "label": "10-Year Treasury Yield",
             "unit": "%",
-            "current_value": data[-1]["value"] if data else None
+            "start_date": start_date,
+            "data": data,
+            "current_value": data[-1]["value"]
         })
     except Exception as e:
-        print(f"API Treasury error: {e}")
         traceback.print_exc()
         return jsonify({
             "success": False,
@@ -186,27 +153,26 @@ def api_treasury():
 
 @app.route("/api/move")
 def api_move():
-    """API endpoint for MOVE index data"""
     try:
-        days = request.args.get("days", 180, type=int)
-        data = get_move_data(days)
-        
+        start_date = request.args.get("start_date", DEFAULT_START_DATE)
+        data = get_move_data(start_date)
+
         if not data:
             return jsonify({
                 "success": False,
                 "error": "No MOVE data available",
                 "data": []
             })
-        
+
         return jsonify({
             "success": True,
-            "data": data,
             "label": "MOVE Index",
             "unit": "",
-            "current_value": data[-1]["value"] if data else None
+            "start_date": start_date,
+            "data": data,
+            "current_value": data[-1]["value"]
         })
     except Exception as e:
-        print(f"API MOVE error: {e}")
         traceback.print_exc()
         return jsonify({
             "success": False,
@@ -217,29 +183,26 @@ def api_move():
 
 @app.route("/api/mortgage")
 def api_mortgage():
-    """API endpoint for mortgage rate data"""
     try:
-        start_year = request.args.get("start_year", 2018, type=int)
-        data = get_mortgage_data(start_year)
-        
+        start_date = request.args.get("start_date", DEFAULT_START_DATE)
+        data = get_mortgage_data(start_date)
+
         if not data:
             return jsonify({
                 "success": False,
                 "error": "No mortgage data available",
                 "data": []
             })
-        
-        current_rate = data[-1]["value"] if data else None
-        
+
         return jsonify({
             "success": True,
-            "data": data,
             "label": "30-Year Mortgage Rate",
             "unit": "%",
-            "current_rate": current_rate
+            "start_date": start_date,
+            "data": data,
+            "current_rate": data[-1]["value"]
         })
     except Exception as e:
-        print(f"API Mortgage error: {e}")
         traceback.print_exc()
         return jsonify({
             "success": False,
@@ -250,24 +213,27 @@ def api_mortgage():
 
 @app.route("/api/test")
 def api_test():
-    """Test endpoint to verify API is working"""
     return jsonify({
         "success": True,
         "message": "API is working",
         "fred_key_set": bool(FRED_API_KEY),
+        "default_start_date": DEFAULT_START_DATE,
         "timestamp": datetime.now().isoformat()
     })
 
 
 @app.route("/health")
 def health():
-    """Health check endpoint"""
-    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat()
+    })
 
 
 if __name__ == "__main__":
-    print("=" * 50)
+    print("=" * 60)
     print("Starting Mortgage Dashboard")
     print(f"FRED_API_KEY set: {bool(FRED_API_KEY)}")
-    print("=" * 50)
+    print(f"Default start date: {DEFAULT_START_DATE}")
+    print("=" * 60)
     app.run(debug=True, host="0.0.0.0", port=5000)

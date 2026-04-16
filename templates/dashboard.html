@@ -1,729 +1,899 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mortgage Rate Dashboard</title>
-    
-    <!-- Use a specific Plotly version known to work well -->
-    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            color: #ffffff;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .stats-bar {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-        
-        .stat-item {
-            background: rgba(255,255,255,0.05);
-            padding: 15px 30px;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .stat-label {
-            font-size: 0.85rem;
-            color: #a0a0a0;
-            margin-bottom: 5px;
-        }
-        
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-        
-        .stat-value.mortgage { color: #00ff88; }
-        .stat-value.treasury { color: #00d2ff; }
-        .stat-value.move { color: #ff6b6b; }
-        
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
-            color: white;
-        }
-        
-        .btn-secondary {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .btn-secondary.active {
-            background: rgba(0, 210, 255, 0.2);
-            border-color: #00d2ff;
-        }
-        
-        .chart-container {
-            background: rgba(255,255,255,0.03);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .chart-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        
-        .zoom-info {
-            font-size: 0.8rem;
-            color: #00d2ff;
-            background: rgba(0,210,255,0.1);
-            padding: 4px 12px;
-            border-radius: 20px;
-        }
-        
-        /* CRITICAL: Set explicit dimensions for Plotly */
-        .chart {
-            width: 100%;
-            height: 350px;
-            position: relative;
-        }
-        
-        #mortgage-chart {
-            height: 400px;
-        }
-        
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            color: #a0a0a0;
-        }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: #00d2ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 15px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .error {
-            color: #ff6b6b;
-            text-align: center;
-            padding: 40px;
-        }
-        
-        .instructions {
-            background: rgba(0,210,255,0.1);
-            border: 1px solid rgba(0,210,255,0.3);
-            border-radius: 10px;
-            padding: 15px;
-            margin: 20px 0;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-        
-        .debug {
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .debug-title {
-            color: #00d2ff;
-            margin-bottom: 10px;
-        }
-        
-        #debug-log {
-            color: #a0a0a0;
-            white-space: pre-wrap;
-        }
-        
-        .log-info { color: #00d2ff; }
-        .log-success { color: #00ff88; }
-        .log-error { color: #ff6b6b; }
-        .log-interaction { color: #ffcc00; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mortgage Rate Dashboard</title>
+
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #a0a0a0;
+      margin-bottom: 24px;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .stat-item {
+      position: relative;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 16px 24px;
+      min-width: 220px;
+      text-align: center;
+      cursor: help;
+    }
+
+    .stat-label {
+      color: #a0a0a0;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 1.7rem;
+      font-weight: 700;
+    }
+
+    .mortgage { color: #00ff88; }
+    .treasury { color: #00d2ff; }
+    .move { color: #ff6b6b; }
+
+    .info-icon {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #cfcfcf;
+    }
+
+    .tooltip {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(320px, calc(100vw - 32px));
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2a2a4e 0%, #1a1a3e 100%);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      opacity: 0;
+      visibility: hidden;
+      transition: 0.2s ease;
+      z-index: 50;
+      text-align: left;
+    }
+
+    .tooltip::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 10px solid transparent;
+      border-bottom-color: #2a2a4e;
+    }
+
+    .stat-item:hover .tooltip,
+    .stat-item:focus-within .tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .tooltip-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .tooltip-content {
+      color: #c8c8c8;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .btn-secondary.active {
+      background: rgba(0,210,255,0.18);
+      border-color: #00d2ff;
+    }
+
+    .btn-reset {
+      background: rgba(255,107,107,0.14);
+      border: 1px solid rgba(255,107,107,0.28);
+      color: #ff9a9a;
+    }
+
+    .insight-banner {
+      display: none;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: linear-gradient(90deg, rgba(0,210,255,0.1), rgba(58,123,213,0.1));
+      border: 1px solid rgba(0,210,255,0.25);
+    }
+
+    .insight-banner.positive {
+      background: linear-gradient(90deg, rgba(0,255,136,0.1), rgba(0,200,100,0.1));
+      border-color: rgba(0,255,136,0.25);
+    }
+
+    .insight-banner.negative {
+      background: linear-gradient(90deg, rgba(255,107,107,0.1), rgba(200,50,50,0.1));
+      border-color: rgba(255,107,107,0.25);
+    }
+
+    .chart-container {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .chart-title {
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .chart-status {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .view-status {
+      font-size: 0.78rem;
+      color: #a0a0a0;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
+    .view-status.zoomed {
+      color: #00d2ff;
+      background: rgba(0,210,255,0.1);
+      border-color: rgba(0,210,255,0.28);
+    }
+
+    .reset-zoom-btn {
+      display: none;
+      font-size: 0.75rem;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,107,107,0.28);
+      background: rgba(255,107,107,0.12);
+      color: #ff9a9a;
+      cursor: pointer;
+    }
+
+    .reset-zoom-btn.visible {
+      display: inline-block;
+    }
+
+    .chart {
+      width: 100%;
+      height: 320px;
+    }
+
+    #mortgage-chart {
+      height: 380px;
+    }
+
+    .loading, .error-message {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a0a0a0;
+      text-align: center;
+    }
+
+    .error-message {
+      color: #ff7f7f;
+    }
+
+    .instructions, .debug-panel {
+      margin-top: 18px;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .instructions {
+      background: rgba(255,255,255,0.05);
+      color: #b8b8b8;
+      line-height: 1.6;
+    }
+
+    .instructions strong {
+      color: #00d2ff;
+    }
+
+    .debug-panel {
+      background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .debug-panel h4 {
+      color: #00d2ff;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+
+    .debug-log {
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      color: #a0a0a0;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .debug-log .info { color: #00d2ff; }
+    .debug-log .success { color: #00ff88; }
+    .debug-log .error { color: #ff6b6b; }
+    .debug-log .interaction { color: #ffcc00; }
+
+    .last-updated, footer {
+      text-align: center;
+      color: #6f6f6f;
+      margin-top: 18px;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+
+      .chart {
+        height: 260px;
+      }
+
+      #mortgage-chart {
+        height: 320px;
+      }
+
+      .tooltip {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        margin-top: 0;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .tooltip::before {
+        display: none;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📊 Mortgage Rate Dashboard</h1>
-        
-        <div class="stats-bar">
-            <div class="stat-item">
-                <div class="stat-label">30Y Mortgage</div>
-                <div class="stat-value mortgage" id="current-mortgage">--</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">10Y Treasury</div>
-                <div class="stat-value treasury" id="current-treasury">--</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">MOVE Index</div>
-                <div class="stat-value move" id="current-move">--</div>
-            </div>
+  <div class="container">
+    <h1>📊 Mortgage Rate Dashboard</h1>
+    <div class="subtitle">All charts begin on June 6, 2019</div>
+
+    <div class="stats-bar">
+      <div class="stat-item" tabindex="0">
+        <span class="info-icon">?</span>
+        <div class="tooltip">
+          <div class="tooltip-title mortgage">🏠 30-Year Mortgage Rate</div>
+          <div class="tooltip-content">
+            This is the average rate borrowers actually pay for a 30-year fixed mortgage.
+            Lower is generally better for buyers and refinancers.
+          </div>
         </div>
-        
-        <div class="controls">
-            <button class="btn btn-primary" onclick="refreshAllData()">🔄 Refresh</button>
-            <button class="btn btn-secondary active" data-year="2024" onclick="changeMortgageRange(this)">6M</button>
-            <button class="btn btn-secondary" data-year="2023" onclick="changeMortgageRange(this)">1Y</button>
-            <button class="btn btn-secondary" data-year="2021" onclick="changeMortgageRange(this)">3Y</button>
-            <button class="btn btn-secondary" data-year="2018" onclick="changeMortgageRange(this)">All</button>
+        <div class="stat-label">Current 30Y Mortgage</div>
+        <div class="stat-value mortgage" id="current-mortgage">--</div>
+      </div>
+
+      <div class="stat-item" tabindex="0">
+        <span class="info-icon">?</span>
+        <div class="tooltip">
+          <div class="tooltip-title treasury">📈 10Y Treasury Yield</div>
+          <div class="tooltip-content">
+            Mortgage rates often move with the 10-year Treasury. If Treasury yields rise,
+            mortgage rates often rise too.
+          </div>
         </div>
-        
-        <div class="instructions">
-            <strong>🖱️ Interactions:</strong> 
-            Drag to pan | Scroll to zoom | Double-click to reset | Hover for values
+        <div class="stat-label">10Y Treasury Yield</div>
+        <div class="stat-value treasury" id="current-treasury">--</div>
+      </div>
+
+      <div class="stat-item" tabindex="0">
+        <span class="info-icon">?</span>
+        <div class="tooltip">
+          <div class="tooltip-title move">📉 MOVE Index</div>
+          <div class="tooltip-content">
+            This measures bond market volatility. Higher volatility can mean lenders charge
+            wider spreads and mortgage pricing can worsen.
+          </div>
         </div>
-        
-        <!-- Treasury Chart -->
-        <div class="chart-container">
-            <div class="chart-header">
-                <span class="chart-title">📈 10-Year Treasury Yield</span>
-                <span class="zoom-info" id="treasury-zoom-info">Full View</span>
-            </div>
-            <div id="treasury-chart" class="chart">
-                <div class="loading"><div class="spinner"></div>Loading...</div>
-            </div>
-        </div>
-        
-        <!-- MOVE Chart -->
-        <div class="chart-container">
-            <div class="chart-header">
-                <span class="chart-title">📉 MOVE Index (Bond Volatility)</span>
-                <span class="zoom-info" id="move-zoom-info">Full View</span>
-            </div>
-            <div id="move-chart" class="chart">
-                <div class="loading"><div class="spinner"></div>Loading...</div>
-            </div>
-        </div>
-        
-        <!-- Mortgage Chart -->
-        <div class="chart-container">
-            <div class="chart-header">
-                <span class="chart-title">🏠 30-Year Mortgage Rate</span>
-                <span class="zoom-info" id="mortgage-zoom-info">Full View</span>
-            </div>
-            <div id="mortgage-chart" class="chart">
-                <div class="loading"><div class="spinner"></div>Loading...</div>
-            </div>
-        </div>
-        
-        <!-- Debug Panel -->
-        <div class="debug">
-            <div class="debug-title">🔧 Interaction Log</div>
-            <div id="debug-log"></div>
-        </div>
+        <div class="stat-label">MOVE Index</div>
+        <div class="stat-value move" id="current-move">--</div>
+      </div>
     </div>
 
-    <script>
-        // ============================================
-        // DEBUG LOGGING
-        // ============================================
-        
-        function log(message, type = 'info') {
-            const logEl = document.getElementById('debug-log');
-            const time = new Date().toLocaleTimeString();
-            const className = `log-${type}`;
-            logEl.innerHTML = `<span class="${className}">[${time}] ${message}</span>\n` + logEl.innerHTML;
-            
-            // Keep log short
-            const lines = logEl.innerHTML.split('\n');
-            if (lines.length > 50) {
-                logEl.innerHTML = lines.slice(0, 50).join('\n');
-            }
-            
-            console.log(`[${type.toUpperCase()}] ${message}`);
+    <div id="insight-banner" class="insight-banner">
+      <span id="insight-text"></span>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh</button>
+      <button class="btn btn-reset" onclick="resetAllZoom()">↩️ Reset Zoom</button>
+      <button class="btn btn-secondary active" data-range="all" onclick="setMortgageRange(this, '2019-06-06')">Since Jun 6 2019</button>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-header">
+        <div class="chart-title">📈 10-Year Treasury Yield</div>
+        <div class="chart-status">
+          <span class="view-status" id="treasury-view-status">View: Full Range</span>
+          <button class="reset-zoom-btn" id="treasury-reset-btn" onclick="resetChartZoom('treasury')">Reset</button>
+        </div>
+      </div>
+      <div id="treasury-chart" class="chart"><div class="loading">Loading treasury data...</div></div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-header">
+        <div class="chart-title">📉 MOVE Index - Bond Volatility</div>
+        <div class="chart-status">
+          <span class="view-status" id="move-view-status">View: Full Range</span>
+          <button class="reset-zoom-btn" id="move-reset-btn" onclick="resetChartZoom('move')">Reset</button>
+        </div>
+      </div>
+      <div id="move-chart" class="chart"><div class="loading">Loading MOVE data...</div></div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-header">
+        <div class="chart-title">🏠 30-Year Fixed Mortgage Rate</div>
+        <div class="chart-status">
+          <span class="view-status" id="mortgage-view-status">View: Full Range</span>
+          <button class="reset-zoom-btn" id="mortgage-reset-btn" onclick="resetChartZoom('mortgage')">Reset</button>
+        </div>
+      </div>
+      <div id="mortgage-chart" class="chart"><div class="loading">Loading mortgage data...</div></div>
+    </div>
+
+    <div class="instructions">
+      <strong>Interactive Controls:</strong>
+      Scroll to zoom | Click and drag to pan | Double-click to reset chart view | Hover for values
+    </div>
+
+    <div class="last-updated" id="last-updated"></div>
+
+    <div class="debug-panel">
+      <h4>🔧 Debug Log</h4>
+      <div class="debug-log" id="debug-log"></div>
+    </div>
+
+    <footer>
+      Data sources: FRED, Yahoo Finance
+    </footer>
+  </div>
+
+  <script>
+    const DEFAULT_START_DATE = '2019-06-06';
+
+    let currentData = {
+      mortgage: null,
+      treasury: null,
+      move: null
+    };
+
+    let chartState = {
+      treasury: { xRange: null, yRange: null, redrawPending: false, handlersAttached: false },
+      move: { xRange: null, yRange: null, redrawPending: false, handlersAttached: false },
+      mortgage: { xRange: null, yRange: null, redrawPending: false, handlersAttached: false }
+    };
+
+    function log(message, type = 'info') {
+      const debugLog = document.getElementById('debug-log');
+      const timestamp = new Date().toLocaleTimeString();
+      debugLog.innerHTML = `<span class="${type}">[${timestamp}] ${message}</span>\n` + debugLog.innerHTML;
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+
+    function showError(containerId, message) {
+      document.getElementById(containerId).innerHTML = `<div class="error-message">❌ ${message}</div>`;
+    }
+
+    function showLoading(containerId, message) {
+      document.getElementById(containerId).innerHTML = `<div class="loading">${message}</div>`;
+    }
+
+    function updateLastUpdated() {
+      const now = new Date();
+      document.getElementById('last-updated').textContent =
+        `Last updated: ${now.toLocaleString()}`;
+    }
+
+    function updateInsightBanner() {
+      const banner = document.getElementById('insight-banner');
+      const textEl = document.getElementById('insight-text');
+
+      if (!currentData.mortgage || !currentData.treasury || !currentData.move) {
+        banner.style.display = 'none';
+        return;
+      }
+
+      banner.style.display = 'block';
+      banner.classList.remove('positive', 'negative');
+
+      const spread = currentData.mortgage - currentData.treasury;
+
+      if (currentData.move > 120) {
+        banner.classList.add('negative');
+        textEl.innerHTML = `<strong>High Volatility:</strong> MOVE at ${currentData.move.toFixed(0)} suggests mortgage spreads may be wide.`;
+      } else if (currentData.move < 90 && spread < 2.5) {
+        banner.classList.add('positive');
+        textEl.innerHTML = `<strong>Favorable Conditions:</strong> Low volatility and tighter-than-normal spread (${spread.toFixed(2)}%).`;
+      } else {
+        textEl.innerHTML = `<strong>Snapshot:</strong> Mortgage ${currentData.mortgage.toFixed(2)}%, Treasury ${currentData.treasury.toFixed(2)}%, MOVE ${currentData.move.toFixed(0)}.`;
+      }
+    }
+
+    function getChartLayout(yTitle, chartKey) {
+      const layout = {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#a0a0a0', family: 'Inter' },
+        margin: { l: 60, r: 25, t: 20, b: 50 },
+        xaxis: {
+          gridcolor: 'rgba(255,255,255,0.1)',
+          linecolor: 'rgba(255,255,255,0.2)',
+          tickformat: window.innerWidth <= 480 ? '%b %y' : '%b %d, %Y',
+          fixedrange: false,
+          autorange: true
+        },
+        yaxis: {
+          gridcolor: 'rgba(255,255,255,0.1)',
+          linecolor: 'rgba(255,255,255,0.2)',
+          title: yTitle,
+          fixedrange: false,
+          autorange: true
+        },
+        hovermode: 'x unified',
+        hoverlabel: {
+          bgcolor: '#1a1a2e',
+          bordercolor: '#00d2ff',
+          font: { color: '#fff' }
+        },
+        dragmode: 'pan',
+        uirevision: chartKey,
+        showlegend: true,
+        legend: {
+          orientation: 'h',
+          x: 0,
+          y: 1.1,
+          font: { color: '#a0a0a0', size: 10 }
         }
-        
-        // ============================================
-        // CHART CONFIGURATION - KEY SETTINGS
-        // ============================================
-        
-        function createChartConfig() {
-            return {
-                responsive: true,
-                displayModeBar: true,
-                displaylogo: false,
-                scrollZoom: true,
-                modeBarButtonsToAdd: [
-                    'pan2d',
-                    'zoom2d',
-                    'zoomIn2d',
-                    'zoomOut2d',
-                    'autoScale2d',
-                    'resetScale2d'
-                ],
-                modeBarButtonsToRemove: ['lasso2d', 'select2d']
-            };
+      };
+
+      const state = chartState[chartKey];
+      if (state.xRange) {
+        layout.xaxis.range = state.xRange;
+        layout.xaxis.autorange = false;
+      }
+      if (state.yRange) {
+        layout.yaxis.range = state.yRange;
+        layout.yaxis.autorange = false;
+      }
+
+      return layout;
+    }
+
+    function getChartConfig() {
+      return {
+        responsive: true,
+        displayModeBar: true,
+        displaylogo: false,
+        scrollZoom: true,
+        doubleClick: 'reset',
+        modeBarButtonsToRemove: ['lasso2d', 'select2d']
+      };
+    }
+
+    function updateChartRangeLabel(chartKey) {
+      const label = document.getElementById(`${chartKey}-view-status`);
+      const btn = document.getElementById(`${chartKey}-reset-btn`);
+      if (!label) return;
+
+      const state = chartState[chartKey];
+      if (state.xRange) {
+        const start = new Date(state.xRange[0]).toLocaleDateString();
+        const end = new Date(state.xRange[1]).toLocaleDateString();
+        label.textContent = `View: ${start} → ${end}`;
+        label.classList.add('zoomed');
+        if (btn) btn.classList.add('visible');
+      } else {
+        label.textContent = 'View: Full Range';
+        label.classList.remove('zoomed');
+        if (btn) btn.classList.remove('visible');
+      }
+    }
+
+    function forceChartRedraw(chartId, chartKey) {
+      const el = document.getElementById(chartId);
+      if (!el || !el.data || !el.layout) return;
+
+      const state = chartState[chartKey];
+      const update = {};
+
+      if (state.xRange) {
+        update['xaxis.range'] = state.xRange;
+        update['xaxis.autorange'] = false;
+      } else {
+        update['xaxis.autorange'] = true;
+      }
+
+      if (state.yRange) {
+        update['yaxis.range'] = state.yRange;
+        update['yaxis.autorange'] = false;
+      } else {
+        update['yaxis.autorange'] = true;
+      }
+
+      Plotly.relayout(el, update).then(() => {
+        Plotly.Plots.resize(el);
+        log(`${chartKey} redrawn`, 'success');
+      }).catch(err => {
+        log(`${chartKey} redraw error: ${err}`, 'error');
+      });
+    }
+
+    function attachPlotlyEvents(chartId, chartKey) {
+      const chartEl = document.getElementById(chartId);
+      if (!chartEl) return;
+
+      if (chartState[chartKey].handlersAttached) return;
+      chartState[chartKey].handlersAttached = true;
+
+      chartEl.on('plotly_relayout', function(eventData) {
+        if (!eventData) return;
+
+        log(`${chartKey} relayout detected`, 'interaction');
+
+        if (eventData['xaxis.autorange'] === true || eventData['yaxis.autorange'] === true) {
+          chartState[chartKey].xRange = null;
+          chartState[chartKey].yRange = null;
+          updateChartRangeLabel(chartKey);
+
+          requestAnimationFrame(() => {
+            forceChartRedraw(chartId, chartKey);
+          });
+          return;
         }
-        
-        function createChartLayout(yAxisTitle) {
-            return {
-                paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                font: {
-                    color: '#a0a0a0',
-                    family: 'Inter, sans-serif'
-                },
-                margin: { l: 60, r: 30, t: 20, b: 50 },
-                xaxis: {
-                    gridcolor: 'rgba(255,255,255,0.1)',
-                    linecolor: 'rgba(255,255,255,0.2)',
-                    tickformat: '%b %d, %Y',
-                    rangeslider: { visible: false },
-                    // CRITICAL: These settings enable zoom/pan
-                    fixedrange: false,
-                    autorange: true
-                },
-                yaxis: {
-                    gridcolor: 'rgba(255,255,255,0.1)',
-                    linecolor: 'rgba(255,255,255,0.2)',
-                    title: yAxisTitle,
-                    // CRITICAL: These settings enable zoom/pan
-                    fixedrange: false,
-                    autorange: true
-                },
-                hovermode: 'x unified',
-                hoverlabel: {
-                    bgcolor: '#1a1a2e',
-                    bordercolor: '#00d2ff',
-                    font: { color: '#ffffff' }
-                },
-                // CRITICAL: Set drag mode to pan by default
-                dragmode: 'pan'
-            };
+
+        const x0 = eventData['xaxis.range[0]'] ?? (eventData['xaxis.range'] ? eventData['xaxis.range'][0] : null);
+        const x1 = eventData['xaxis.range[1]'] ?? (eventData['xaxis.range'] ? eventData['xaxis.range'][1] : null);
+        const y0 = eventData['yaxis.range[0]'] ?? (eventData['yaxis.range'] ? eventData['yaxis.range'][0] : null);
+        const y1 = eventData['yaxis.range[1]'] ?? (eventData['yaxis.range'] ? eventData['yaxis.range'][1] : null);
+
+        if (x0 && x1) {
+          chartState[chartKey].xRange = [x0, x1];
         }
-        
-        // ============================================
-        // ZOOM INFO UPDATER
-        // ============================================
-        
-        function updateZoomInfo(chartId, eventData) {
-            const infoEl = document.getElementById(`${chartId}-zoom-info`);
-            if (!infoEl) return;
-            
-            // Check if we have range data
-            const hasXRange = eventData['xaxis.range[0]'] && eventData['xaxis.range[1]'];
-            const hasAutoRange = eventData['xaxis.autorange'];
-            
-            if (hasAutoRange) {
-                infoEl.textContent = 'Full View';
-                infoEl.style.background = 'rgba(0,210,255,0.1)';
-            } else if (hasXRange) {
-                try {
-                    const start = new Date(eventData['xaxis.range[0]']);
-                    const end = new Date(eventData['xaxis.range[1]']);
-                    const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    infoEl.textContent = `${startStr} → ${endStr}`;
-                    infoEl.style.background = 'rgba(0,255,136,0.2)';
-                } catch (e) {
-                    infoEl.textContent = 'Zoomed';
-                    infoEl.style.background = 'rgba(0,255,136,0.2)';
-                }
-            }
+        if (y0 !== null && y1 !== null) {
+          chartState[chartKey].yRange = [y0, y1];
         }
-        
-        // ============================================
-        // ATTACH PLOTLY EVENT LISTENERS
-        // ============================================
-        
-        function attachPlotlyEvents(chartId) {
-            const chartEl = document.getElementById(chartId);
-            if (!chartEl) {
-                log(`Chart element not found: ${chartId}`, 'error');
-                return;
-            }
-            
-            // Relayout event - fires on zoom/pan
-            chartEl.on('plotly_relayout', function(eventData) {
-                log(`${chartId} RELAYOUT: ${JSON.stringify(eventData).substring(0, 100)}`, 'interaction');
-                updateZoomInfo(chartId.replace('-chart', ''), eventData);
-            });
-            
-            // Hover event
-            chartEl.on('plotly_hover', function(data) {
-                const point = data.points[0];
-                log(`${chartId} HOVER: ${point.x} = ${point.y.toFixed(2)}`, 'interaction');
-            });
-            
-            // Click event
-            chartEl.on('plotly_click', function(data) {
-                const point = data.points[0];
-                log(`${chartId} CLICK: ${point.x} = ${point.y.toFixed(2)}`, 'interaction');
-            });
-            
-            // Double click event
-            chartEl.on('plotly_doubleclick', function() {
-                log(`${chartId} DOUBLE-CLICK: Resetting view`, 'interaction');
-                const infoEl = document.getElementById(chartId.replace('-chart', '') + '-zoom-info');
-                if (infoEl) {
-                    infoEl.textContent = 'Full View';
-                    infoEl.style.background = 'rgba(0,210,255,0.1)';
-                }
-            });
-            
-            log(`Events attached to ${chartId}`, 'success');
+
+        updateChartRangeLabel(chartKey);
+
+        if (!chartState[chartKey].redrawPending) {
+          chartState[chartKey].redrawPending = true;
+          requestAnimationFrame(() => {
+            forceChartRedraw(chartId, chartKey);
+            chartState[chartKey].redrawPending = false;
+          });
         }
-        
-        // ============================================
-        // RENDER CHARTS
-        // ============================================
-        
-        function renderTreasuryChart(dates, values) {
-            const chartId = 'treasury-chart';
-            
-            const trace = {
-                x: dates,
-                y: values,
-                type: 'scattergl',  // Use WebGL for better performance
-                mode: 'lines',
-                name: '10Y Treasury',
-                line: { color: '#00d2ff', width: 2 },
-                fill: 'tozeroy',
-                fillcolor: 'rgba(0, 210, 255, 0.1)',
-                hovertemplate: '<b>%{x|%b %d, %Y}</b><br>Yield: %{y:.2f}%<extra></extra>'
-            };
-            
-            const layout = createChartLayout('Yield (%)');
-            const config = createChartConfig();
-            
-            // Use newPlot for initial render
-            Plotly.newPlot(chartId, [trace], layout, config).then(function() {
-                log('Treasury chart rendered', 'success');
-                attachPlotlyEvents(chartId);
-            }).catch(function(err) {
-                log(`Treasury chart error: ${err}`, 'error');
-            });
-        }
-        
-        function renderMoveChart(dates, values) {
-            const chartId = 'move-chart';
-            
-            const trace = {
-                x: dates,
-                y: values,
-                type: 'scattergl',
-                mode: 'lines',
-                name: 'MOVE Index',
-                line: { color: '#ff6b6b', width: 2 },
-                fill: 'tozeroy',
-                fillcolor: 'rgba(255, 107, 107, 0.1)',
-                hovertemplate: '<b>%{x|%b %d, %Y}</b><br>MOVE: %{y:.1f}<extra></extra>'
-            };
-            
-            // Reference lines
-            const highLine = {
-                x: [dates[0], dates[dates.length - 1]],
-                y: [120, 120],
-                type: 'scatter',
-                mode: 'lines',
-                name: 'High (120)',
-                line: { color: '#ff6b6b', width: 1, dash: 'dash' },
-                hoverinfo: 'skip'
-            };
-            
-            const lowLine = {
-                x: [dates[0], dates[dates.length - 1]],
-                y: [90, 90],
-                type: 'scatter',
-                mode: 'lines',
-                name: 'Low (90)',
-                line: { color: '#00ff88', width: 1, dash: 'dash' },
-                hoverinfo: 'skip'
-            };
-            
-            const layout = createChartLayout('Index');
-            layout.showlegend = true;
-            layout.legend = { x: 0, y: 1.1, orientation: 'h', font: { size: 10 } };
-            
-            Plotly.newPlot(chartId, [trace, highLine, lowLine], layout, createChartConfig()).then(function() {
-                log('MOVE chart rendered', 'success');
-                attachPlotlyEvents(chartId);
-            });
-        }
-        
-        function renderMortgageChart(dates, values, currentRate) {
-            const chartId = 'mortgage-chart';
-            
-            const trace = {
-                x: dates,
-                y: values,
-                type: 'scattergl',
-                mode: 'lines',
-                name: '30Y Mortgage',
-                line: { color: '#00ff88', width: 2 },
-                fill: 'tozeroy',
-                fillcolor: 'rgba(0, 255, 136, 0.1)',
-                hovertemplate: '<b>%{x|%b %d, %Y}</b><br>Rate: %{y:.2f}%<extra></extra>'
-            };
-            
-            const currentLine = {
-                x: [dates[0], dates[dates.length - 1]],
-                y: [currentRate, currentRate],
-                type: 'scatter',
-                mode: 'lines',
-                name: `Current: ${currentRate.toFixed(2)}%`,
-                line: { color: '#ffcc00', width: 2, dash: 'dash' },
-                hoverinfo: 'skip'
-            };
-            
-            const layout = createChartLayout('Rate (%)');
-            layout.showlegend = true;
-            layout.legend = { x: 0, y: 1.1, orientation: 'h', font: { size: 10 } };
-            
-            Plotly.newPlot(chartId, [trace, currentLine], layout, createChartConfig()).then(function() {
-                log('Mortgage chart rendered', 'success');
-                attachPlotlyEvents(chartId);
-            });
-        }
-        
-        // ============================================
-        // DATA LOADING
-        // ============================================
-        
-        async function loadTreasuryData() {
-            log('Loading Treasury data...', 'info');
-            
-            try {
-                const response = await fetch('/api/treasury');
-                const result = await response.json();
-                
-                if (!result.success || !result.data || result.data.length === 0) {
-                    document.getElementById('treasury-chart').innerHTML = 
-                        '<div class="error">Failed to load Treasury data</div>';
-                    log('Treasury data load failed', 'error');
-                    return;
-                }
-                
-                const dates = result.data.map(d => d.date);
-                const values = result.data.map(d => d.value);
-                
-                // Update stat display
-                const current = values[values.length - 1];
-                document.getElementById('current-treasury').textContent = current.toFixed(2) + '%';
-                
-                renderTreasuryChart(dates, values);
-                log(`Treasury loaded: ${result.data.length} points`, 'success');
-                
-            } catch (err) {
-                log(`Treasury error: ${err.message}`, 'error');
-                document.getElementById('treasury-chart').innerHTML = 
-                    `<div class="error">Error: ${err.message}</div>`;
-            }
-        }
-        
-        async function loadMoveData() {
-            log('Loading MOVE data...', 'info');
-            
-            try {
-                const response = await fetch('/api/move');
-                const result = await response.json();
-                
-                if (!result.success || !result.data || result.data.length === 0) {
-                    document.getElementById('move-chart').innerHTML = 
-                        '<div class="error">Failed to load MOVE data</div>';
-                    log('MOVE data load failed', 'error');
-                    return;
-                }
-                
-                const dates = result.data.map(d => d.date);
-                const values = result.data.map(d => d.value);
-                
-                const current = values[values.length - 1];
-                document.getElementById('current-move').textContent = current.toFixed(1);
-                
-                renderMoveChart(dates, values);
-                log(`MOVE loaded: ${result.data.length} points`, 'success');
-                
-            } catch (err) {
-                log(`MOVE error: ${err.message}`, 'error');
-                document.getElementById('move-chart').innerHTML = 
-                    `<div class="error">Error: ${err.message}</div>`;
-            }
-        }
-        
-        async function loadMortgageData(startYear = 2024) {
-            log(`Loading Mortgage data from ${startYear}...`, 'info');
-            
-            try {
-                const response = await fetch(`/api/mortgage?start_year=${startYear}`);
-                const result = await response.json();
-                
-                if (!result.success || !result.data || result.data.length === 0) {
-                    document.getElementById('mortgage-chart').innerHTML = 
-                        '<div class="error">Failed to load Mortgage data</div>';
-                    log('Mortgage data load failed', 'error');
-                    return;
-                }
-                
-                const dates = result.data.map(d => d.date);
-                const values = result.data.map(d => d.value);
-                const currentRate = result.current_rate;
-                
-                document.getElementById('current-mortgage').textContent = currentRate.toFixed(2) + '%';
-                
-                renderMortgageChart(dates, values, currentRate);
-                log(`Mortgage loaded: ${result.data.length} points`, 'success');
-                
-            } catch (err) {
-                log(`Mortgage error: ${err.message}`, 'error');
-                document.getElementById('mortgage-chart').innerHTML = 
-                    `<div class="error">Error: ${err.message}</div>`;
-            }
-        }
-        
-        // ============================================
-        // USER ACTIONS
-        // ============================================
-        
-        function changeMortgageRange(btn) {
-            // Update active state
-            document.querySelectorAll('.btn-secondary').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            const year = parseInt(btn.dataset.year);
-            log(`Changing mortgage range to ${year}`, 'info');
-            
-            // Show loading
-            document.getElementById('mortgage-chart').innerHTML = 
-                '<div class="loading"><div class="spinner"></div>Loading...</div>';
-            
-            loadMortgageData(year);
-        }
-        
-        function refreshAllData() {
-            log('Refreshing all data...', 'info');
-            
-            // Show loading states
-            document.getElementById('treasury-chart').innerHTML = 
-                '<div class="loading"><div class="spinner"></div>Loading...</div>';
-            document.getElementById('move-chart').innerHTML = 
-                '<div class="loading"><div class="spinner"></div>Loading...</div>';
-            document.getElementById('mortgage-chart').innerHTML = 
-                '<div class="loading"><div class="spinner"></div>Loading...</div>';
-            
-            // Reset zoom info
-            document.getElementById('treasury-zoom-info').textContent = 'Full View';
-            document.getElementById('move-zoom-info').textContent = 'Full View';
-            document.getElementById('mortgage-zoom-info').textContent = 'Full View';
-            
-            // Load data
-            loadTreasuryData();
-            loadMoveData();
-            
-            const activeBtn = document.querySelector('.btn-secondary.active');
-            const year = activeBtn ? parseInt(activeBtn.dataset.year) : 2024;
-            loadMortgageData(year);
-        }
-        
-        // ============================================
-        // WINDOW RESIZE
-        // ============================================
-        
-        let resizeTimer;
-        window.addEventListener('resize', function() {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() {
-                log('Window resized - updating charts', 'info');
-                
-                const charts = ['treasury-chart', 'move-chart', 'mortgage-chart'];
-                charts.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el && el.data) {
-                        Plotly.Plots.resize(el);
-                    }
-                });
-            }, 250);
+      });
+
+      chartEl.on('plotly_doubleclick', function() {
+        chartState[chartKey].xRange = null;
+        chartState[chartKey].yRange = null;
+        updateChartRangeLabel(chartKey);
+
+        requestAnimationFrame(() => {
+          forceChartRedraw(chartId, chartKey);
         });
-        
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            log('Dashboard starting...', 'info');
-            log(`Plotly version: ${Plotly.version || 'unknown'}`, 'info');
-            
-            // Test API first
-            fetch('/api/test')
-                .then(r => r.json())
-                .then(data => {
-                    log(`API test: ${data.success ? 'OK' : 'FAILED'}`, data.success ? 'success' : 'error');
-                })
-                .catch(err => {
-                    log(`API test failed: ${err.message}`, 'error');
-                });
-            
-            // Load all data
-            loadTreasuryData();
-            loadMoveData();
-            loadMortgageData(2024);
+      });
+
+      chartEl.on('plotly_afterplot', function() {
+        log(`${chartKey} afterplot fired`, 'success');
+      });
+
+      log(`Attached events to ${chartKey}`, 'success');
+    }
+
+    function renderChart(chartId, chartKey, traces, yTitle) {
+      return Plotly.react(
+        chartId,
+        traces,
+        getChartLayout(yTitle, chartKey),
+        getChartConfig()
+      ).then(() => {
+        chartState[chartKey].handlersAttached = false;
+        attachPlotlyEvents(chartId, chartKey);
+        updateChartRangeLabel(chartKey);
+      });
+    }
+
+    async function loadTreasuryData(startDate = DEFAULT_START_DATE) {
+      showLoading('treasury-chart', 'Loading treasury data...');
+      try {
+        const response = await fetch(`/api/treasury?start_date=${startDate}`);
+        const result = await response.json();
+
+        if (!result.success || !result.data || !result.data.length) {
+          showError('treasury-chart', result.error || 'No Treasury data available');
+          return;
+        }
+
+        const dates = result.data.map(d => d.date);
+        const values = result.data.map(d => d.value);
+
+        currentData.treasury = values[values.length - 1];
+        document.getElementById('current-treasury').textContent =
+          currentData.treasury.toFixed(2) + '%';
+        updateInsightBanner();
+
+        const traces = [{
+          x: dates,
+          y: values,
+          type: 'scatter',
+          mode: 'lines',
+          name: '10Y Treasury',
+          line: { color: '#00d2ff', width: 2 },
+          fill: 'tozeroy',
+          fillcolor: 'rgba(0,210,255,0.1)',
+          hovertemplate: '<b>%{x|%b %d, %Y}</b><br>Yield: %{y:.2f}%<extra></extra>'
+        }];
+
+        await renderChart('treasury-chart', 'treasury', traces, 'Yield (%)');
+      } catch (e) {
+        showError('treasury-chart', e.message);
+        log(`Treasury error: ${e.message}`, 'error');
+      }
+    }
+
+    async function loadMoveData(startDate = DEFAULT_START_DATE) {
+      showLoading('move-chart', 'Loading MOVE data...');
+      try {
+        const response = await fetch(`/api/move?start_date=${startDate}`);
+        const result = await response.json();
+
+        if (!result.success || !result.data || !result.data.length) {
+          showError('move-chart', result.error || 'No MOVE data available');
+          return;
+        }
+
+        const dates = result.data.map(d => d.date);
+        const values = result.data.map(d => d.value);
+
+        currentData.move = values[values.length - 1];
+        document.getElementById('current-move').textContent =
+          currentData.move.toFixed(1);
+        updateInsightBanner();
+
+        const traces = [
+          {
+            x: dates,
+            y: values,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'MOVE Index',
+            line: { color: '#ff6b6b', width: 2 },
+            fill: 'tozeroy',
+            fillcolor: 'rgba(255,107,107,0.1)',
+            hovertemplate: '<b>%{x|%b %d, %Y}</b><br>MOVE: %{y:.1f}<extra></extra>'
+          },
+          {
+            x: [dates[0], dates[dates.length - 1]],
+            y: [120, 120],
+            type: 'scatter',
+            mode: 'lines',
+            name: 'High Vol (120)',
+            line: { color: '#ff6b6b', width: 1, dash: 'dash' },
+            hoverinfo: 'skip'
+          },
+          {
+            x: [dates[0], dates[dates.length - 1]],
+            y: [90, 90],
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Low Vol (90)',
+            line: { color: '#00ff88', width: 1, dash: 'dash' },
+            hoverinfo: 'skip'
+          }
+        ];
+
+        await renderChart('move-chart', 'move', traces, 'Index Value');
+      } catch (e) {
+        showError('move-chart', e.message);
+        log(`MOVE error: ${e.message}`, 'error');
+      }
+    }
+
+    async function loadMortgageData(startDate = DEFAULT_START_DATE) {
+      showLoading('mortgage-chart', 'Loading mortgage data...');
+      try {
+        const response = await fetch(`/api/mortgage?start_date=${startDate}`);
+        const result = await response.json();
+
+        if (!result.success || !result.data || !result.data.length) {
+          showError('mortgage-chart', result.error || 'No Mortgage data available');
+          return;
+        }
+
+        const dates = result.data.map(d => d.date);
+        const values = result.data.map(d => d.value);
+        const currentRate = result.current_rate;
+
+        currentData.mortgage = currentRate;
+        document.getElementById('current-mortgage').textContent =
+          currentRate.toFixed(2) + '%';
+        updateInsightBanner();
+
+        const traces = [
+          {
+            x: dates,
+            y: values,
+            type: 'scatter',
+            mode: 'lines',
+            name: '30Y Mortgage',
+            line: { color: '#00ff88', width: 2 },
+            fill: 'tozeroy',
+            fillcolor: 'rgba(0,255,136,0.1)',
+            hovertemplate: '<b>%{x|%b %d, %Y}</b><br>Rate: %{y:.2f}%<extra></extra>'
+          },
+          {
+            x: [dates[0], dates[dates.length - 1]],
+            y: [currentRate, currentRate],
+            type: 'scatter',
+            mode: 'lines',
+            name: `Current: ${currentRate.toFixed(2)}%`,
+            line: { color: '#ffcc00', width: 2, dash: 'dash' },
+            hoverinfo: 'skip'
+          }
+        ];
+
+        await renderChart('mortgage-chart', 'mortgage', traces, 'Rate (%)');
+      } catch (e) {
+        showError('mortgage-chart', e.message);
+        log(`Mortgage error: ${e.message}`, 'error');
+      }
+    }
+
+    function setMortgageRange(button, startDate) {
+      document.querySelectorAll('.btn-secondary').forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+
+      chartState.mortgage.xRange = null;
+      chartState.mortgage.yRange = null;
+      updateChartRangeLabel('mortgage');
+
+      loadMortgageData(startDate);
+    }
+
+    function resetChartZoom(chartKey) {
+      chartState[chartKey].xRange = null;
+      chartState[chartKey].yRange = null;
+      updateChartRangeLabel(chartKey);
+      forceChartRedraw(`${chartKey}-chart`, chartKey);
+    }
+
+    function resetAllZoom() {
+      ['treasury', 'move', 'mortgage'].forEach(resetChartZoom);
+    }
+
+    function refreshData() {
+      loadTreasuryData(DEFAULT_START_DATE);
+      loadMoveData(DEFAULT_START_DATE);
+      loadMortgageData(DEFAULT_START_DATE);
+      updateLastUpdated();
+    }
+
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        ['treasury-chart', 'move-chart', 'mortgage-chart'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el.data) Plotly.Plots.resize(el);
         });
-    </script>
+        log('Charts resized', 'info');
+      }, 200);
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      log('Dashboard initializing...', 'info');
+
+      fetch('/api/test')
+        .then(r => r.json())
+        .then(data => log(`API test: ${data.success ? 'OK' : 'FAILED'}`, data.success ? 'success' : 'error'))
+        .catch(err => log(`API test failed: ${err.message}`, 'error'));
+
+      refreshData();
+    });
+  </script>
 </body>
 </html>
