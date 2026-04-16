@@ -1,7 +1,8 @@
-yfinance
+flask
+flask-cors
 pandas
-matplotlib
+yfinance
 fredapi
 python-dotenv
 certifi
-mplcursors
+gunicorn
