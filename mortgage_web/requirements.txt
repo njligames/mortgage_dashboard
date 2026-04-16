@@ -1,0 +1,8 @@
+flask
+flask-cors
+pandas
+yfinance
+fredapi
+python-dotenv
+certifi
+gunicorn
