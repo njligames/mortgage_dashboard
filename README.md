@@ -55,6 +55,7 @@ Think of it as the "VIX for bonds." High volatility (>120) means uncertainty, ca
 ```bash
 git clone https://github.com/yourusername/mortgage-dashboard.git
 cd mortgage-dashboard
+```
 
 ## Federal Reserve Economic Data (FRED)
 
@@ -93,3 +94,4 @@ To use this dashboard, you need a free FRED API key.
 
 ```env
 FRED_API_KEY=your_api_key_here
+```
