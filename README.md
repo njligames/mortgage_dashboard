@@ -55,3 +55,41 @@ Think of it as the "VIX for bonds." High volatility (>120) means uncertainty, ca
 ```bash
 git clone https://github.com/yourusername/mortgage-dashboard.git
 cd mortgage-dashboard
+
+## Federal Reserve Economic Data (FRED)
+
+This project uses the **FRED API** to retrieve the 30-Year Fixed Rate Mortgage Average in the United States.
+
+### What is FRED?
+
+[FRED](https://fred.stlouisfed.org/) stands for **Federal Reserve Economic Data**. It is maintained by the **Federal Reserve Bank of St. Louis** and provides access to hundreds of thousands of economic time series from government agencies and other sources.
+
+In this project, FRED is used for:
+
+- **30-Year Fixed Mortgage Rate**
+  - Series ID: `MORTGAGE30US`
+  - Description: 30-Year Fixed Rate Mortgage Average in the United States
+  - Source: Freddie Mac / FRED
+
+### Why FRED is Used
+
+FRED is a reliable source for historical U.S. mortgage rate data because:
+
+- It provides long-term historical coverage
+- It is widely used in economic and financial analysis
+- It offers a stable API for programmatic access
+- The data is maintained by a trusted Federal Reserve institution
+
+### FRED API Key Setup
+
+To use this dashboard, you need a free FRED API key.
+
+#### Steps to get a FRED API key
+
+1. Visit: [https://fred.stlouisfed.org/docs/api/api_key.html](https://fred.stlouisfed.org/docs/api/api_key.html)
+2. Sign in or create a free account
+3. Request an API key
+4. Add the key to your `.env` file:
+
+```env
+FRED_API_KEY=your_api_key_here
